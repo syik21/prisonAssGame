@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prison Ass Game</title>
+    <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Noto+Sans+SC:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #0a0a0a;
+            --card-bg: #1e1e1e;
+            --accent-color: #00ff9d; /* Neon Green */
+            --accent-secondary: #ff0055; /* Neon Red */
+            --text-color: #e0e0e0;
+            --border-radius: 8px;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* --- DEFAULT STATE: Slow Green/Cyan Breathing Glow --- */
+        @keyframes screen-pulse {
+            0%, 100% { box-shadow: inset 0 0 30px rgba(0, 255, 157, 0.1); }
+            50% { box-shadow: inset 0 0 100px rgba(0, 255, 157, 0.25); }
+        }
+
+        /* --- ACTIVE STATE: Fast, Intense Red Glow --- */
+        @keyframes screen-pulse-active {
+            0% { box-shadow: inset 0 0 50px rgba(255, 0, 85, 0.4); } 
+            50% { box-shadow: inset 0 0 180px rgba(255, 0, 85, 0.9); } /* Much brighter red peak */
+            100% { box-shadow: inset 0 0 50px rgba(255, 0, 85, 0.4); }
+        }
+
+        body {
+            font-family: 'Share Tech Mono', 'Noto Sans SC', monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+            /* Default animation */
+            animation: screen-pulse 6s ease-in-out infinite;
+            transition: animation 0.3s ease; /* Smooth transition between states */
+        }
+
+        /* This class is added via JS during generation */
+        body.is-generating {
+            /* Override default with faster, red animation */
+            animation: screen-pulse-active 1s ease-in-out infinite !important;
+        }
+        /* ----------------------------------------- */
+
+        .container {
+            background-color: var(--card-bg);
+            width: 100%;
+            max-width: 500px;
+            padding: 30px;
+            border-radius: var(--border-radius);
+            box-shadow: 0 0 40px rgba(0, 0, 0, 0.7);
+            border: 1px solid #333;
+            position: relative;
+            overflow: hidden;
+            z-index: 2;
+        }
+
+        .container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--accent-secondary));
+        }
+
+        h1 {
+            text-align: center;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 30px;
+            color: var(--accent-color);
+            text-shadow: 0 0 10px rgba(0, 255, 157, 0.5);
+            font-size: 2rem;
+        }
+
+        .game-board {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background-color: #2a2a2a;
+            border-left: 3px solid #444;
+            transition: all 0.3s ease;
+        }
+
+        .row:hover {
+            border-left: 3px solid var(--accent-secondary);
+            background-color: #333;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #ccc;
+            flex: 2;
+        }
+
+        .number-display {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--accent-color);
+            flex: 1;
+            text-align: right;
+            font-family: 'Share Tech Mono', monospace;
+            min-width: 60px;
+        }
+
+        button {
+            width: 100%;
+            margin-top: 30px;
+            padding: 15px;
+            font-family: 'Share Tech Mono', 'Noto Sans SC', monospace;
+            font-size: 1.2rem;
+            font-weight: bold;
+            background: transparent;
+            color: var(--accent-color);
+            border: 2px solid var(--accent-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover:not(:disabled) {
+            background-color: var(--accent-color);
+            color: var(--bg-color);
+            box-shadow: 0 0 20px rgba(0, 255, 157, 0.4);
+        }
+
+        button:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        button:disabled {
+            cursor: not-allowed;
+            border-color: var(--accent-secondary); /* Turn border red when disabled */
+            color: var(--accent-secondary);
+            background-color: rgba(50, 0, 0, 0.3);
+        }
+        
+        /* Red loading bar */
+        button:disabled::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            background-color: var(--accent-secondary);
+            animation: loading-bar 1.5s linear infinite;
+        }
+
+        @keyframes loading-bar {
+            0% { width: 0%; opacity: 1; }
+            90% { width: 100%; opacity: 1;}
+            100% { width: 100%; opacity: 0; }
+        }
+
+
+        @media (max-width: 400px) {
+            h1 { font-size: 1.5rem; }
+            .subtitle { font-size: 0.9rem; }
+            .number-display { font-size: 1.2rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Prison Ass Game</h1>
+        
+        <div class="game-board">
+            <div class="row">
+                <div class="subtitle">折千纸鹤 (最多 30个)</div>
+                <div class="number-display" id="task1" data-min="0" data-max="30">--</div>
+            </div>
+
+            <div class="row">
+                <div class="subtitle">静坐 (最多 5分钟)</div>
+                <div class="number-display" id="task2" data-min="0" data-max="5">--</div>
+            </div>
+
+            <div class="row">
+                <div class="subtitle">完成数独 (最多 3篇)</div>
+                <div class="number-display" id="task3" data-min="0" data-max="3">--</div>
+            </div>
+
+            <div class="row">
+                <div class="subtitle">分红豆绿豆 (最多 3杯)</div>
+                <div class="number-display" id="task4" data-min="0" data-max="3">--</div>
+            </div>
+
+            <div class="row">
+                <div class="subtitle">写作文并朗诵 (最多 300字)</div>
+                <div class="number-display" id="task5" data-min="100" data-max="300">---</div>
+            </div>
+        </div>
+
+        <button id="gen-btn" onclick="generateNumbers()">GENERATE TASKS</button>
+    </div>
+
+    <script>
+        const ANIMATION_DURATION_MS = 2000; // Increased slightly for dramatic effect
+        const generateBtn = document.getElementById('gen-btn');
+        const bodyElement = document.body; // Get reference to body
+
+        function generateNumbers() {
+            // --- Start state ---
+            generateBtn.disabled = true;
+            const originalText = generateBtn.innerText;
+            generateBtn.innerText = "INITIALIZING...";
+            
+            // *** Activate Red Intense Glow ***
+            bodyElement.classList.add('is-generating');
+            // ----------------------------------
+
+            const tasks = [
+                document.getElementById('task1'),
+                document.getElementById('task2'),
+                document.getElementById('task3'),
+                document.getElementById('task4'),
+                document.getElementById('task5')
+            ];
+
+            tasks.forEach(task => {
+                const min = parseInt(task.getAttribute('data-min'));
+                const max = parseInt(task.getAttribute('data-max'));
+                animateValue(task, min, max, ANIMATION_DURATION_MS);
+            });
+
+            // --- End state after animation ---
+            setTimeout(() => {
+                generateBtn.disabled = false;
+                generateBtn.innerText = originalText;
+                
+                // *** Revert back to normal glow ***
+                bodyElement.classList.remove('is-generating');
+                // ----------------------------------
+
+            }, ANIMATION_DURATION_MS + 300); // Buffer to ensure numbers finish first
+        }
+
+        function animateValue(obj, min, max, duration) {
+            let startTimestamp = null;
+            const finalValue = Math.max(Math.floor(Math.random() * max), min);
+
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+
+                if (progress < 1) {
+                    obj.innerHTML = Math.floor(Math.random() * (max - min + 1)) + min;
+                    // Dimmed red color during shuffle for dramatic effect
+                    obj.style.color = "rgba(255, 0, 85, 0.7)";
+                    window.requestAnimationFrame(step);
+                } else {
+                    obj.innerHTML = finalValue;
+                    // Final Flash effect
+                    obj.style.color = "#fff";
+                    obj.style.textShadow = "0 0 20px #fff, 0 0 40px var(--accent-secondary)";
+                    setTimeout(() => {
+                        // Return to standard neon green
+                        obj.style.color = "var(--accent-color)";
+                        obj.style.textShadow = "none";
+                    }, 500);
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+    </script>
+</body>
+</html>
